@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1055041145910",
+    "project_id": "devcare-hackathon",
+    "storage_bucket": "devcare-hackathon.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1055041145910:android:38f5d849d12cfd57489c97",
+        "android_client_info": {
+          "package_name": "com.example.devcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3J9QlSoD-4Kq8QvdrehKbwsI103auktg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

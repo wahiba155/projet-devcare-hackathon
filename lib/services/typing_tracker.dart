@@ -1,30 +1,42 @@
 class TypingTracker {
-  String lastText = "";
-  DateTime lastTime = DateTime.now();
-
   int calculateTypingStress(String text) {
-    int score = 0;
+    // 1. Start with a very low base
+    int score = 10;
+    String input = text.toLowerCase();
 
-    // speed detection
-    final now = DateTime.now();
-    final diff = now.difference(lastTime).inMilliseconds;
+    // 2. 🚨 KEYWORD DETECTION (Add more keywords here!)
+    // If any of these are found, the score JUMPS.
+    Map<String, int> triggers = {
+      "tired": 40,
+      "exhausted": 50,
+      "dizzy": 45,
+      "stuck": 30,
+      "error": 25,
+      "bug": 25,
+      "help": 20,
+      "bloqué": 35, // Added French for your example text
+      "épuisé": 45,
+    };
 
-    if (diff < 500) {
-      score += 10; // fast typing
+    triggers.forEach((word, points) {
+      if (input.contains(word)) {
+        score += points;
+      }
+    });
+
+    // 3. ⌨️ PATTERN DETECTION
+    // High Caps = Frustration
+    if (text.length > 4 && text.toUpperCase() == text) {
+      score += 25;
     }
 
-    // backspace / rewrite detection
-    if (text.length < lastText.length) {
+    // Frantic punctuation
+    if (text.contains("!!!")) {
       score += 15;
     }
 
-    // frustration patterns
-    if (text.contains("!!!") || text.toUpperCase() == text && text.length > 5) {
-      score += 10;
-    }
-
-    lastText = text;
-    lastTime = now;
+    // 4. 🔒 CLAMP SCORE (0-100)
+    if (score > 100) score = 100;
 
     return score;
   }

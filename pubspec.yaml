@@ -1,31 +1,31 @@
-name: devcare 
-description: "DevCare app" 
-publish_to: 'none' 
-version: 1.0.0+1 
- 
-environment:
-  sdk: '>=3.3.0 <4.0.0'
- 
-dependencies:
+  name: devcare
+  description: "DevCare app"
+  publish_to: 'none'
+  version: 1.0.0+1
+
+  environment:
+    sdk: '>=3.3.0 <4.0.0'
+
+  dependencies:
+    flutter:
+      sdk: flutter
+    cupertino_icons: ^1.0.8
+    firebase_core: ^3.0.0
+    firebase_auth: ^5.0.0
+    fl_chart: ^0.68.0
+    flutter_animate: ^4.5.0
+    google_fonts: ^6.2.1
+    provider: ^6.1.2
+    http: ^1.2.1
+    shared_preferences: ^2.3.0
+    intl: ^0.19.0
+    cloud_firestore: ^5.6.12
+
+
+  dev_dependencies:
+    flutter_test:
+      sdk: flutter
+    flutter_lints: 6.0.0
+
   flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.8
-  firebase_core: ^3.0.0
-  firebase_auth: ^5.0.0
-  fl_chart: ^0.68.0
-  flutter_animate: ^4.5.0
-  google_fonts: ^6.2.1
-  provider: ^6.1.2
-  http: ^1.2.1
-  shared_preferences: ^2.3.0
-  intl: ^0.19.0
-  cloud_firestore: ^5.6.12
-  
- 
-dev_dependencies: 
-  flutter_test: 
-    sdk: flutter 
-  flutter_lints: 6.0.0 
- 
-flutter: 
-  uses-material-design: true
+    uses-material-design: true

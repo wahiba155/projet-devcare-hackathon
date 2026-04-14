@@ -3,15 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../services/stress_engine.dart';
-import '../services/ai_service.dart'; // 👈 Import AIBrainService
+import '../services/ai_service.dart'; // Ensure this filename matches
 import '../models/stress_result.dart';
 
 class AppProvider extends ChangeNotifier {
   final StressEngine engine = StressEngine();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final AIBrainService aiBrain = AIBrainService(); // 👈 Add this
+  final AIBrainService aiBrain = AIBrainService();
 
-  String get userId => FirebaseAuth.instance.currentUser!.uid;
+  String? get userId => FirebaseAuth.instance.currentUser?.uid;
   final String sessionId = "current";
 
   int stressScore = 0;
@@ -27,66 +27,62 @@ class AppProvider extends ChangeNotifier {
   List<Map<String, dynamic>> stressHistory = [];
 
   Future<void> analyzeState(String userText) async {
+    final uid = userId;
+
+    if (uid == null) {
+      debugPrint("User not logged in");
+      return;
+    }
+
     isAnalyzing = true;
     notifyListeners();
 
-    // 🧠 1. LOCAL STRESS ENGINE ANALYSIS
-    StressResult result = engine.analyze(
-      text: userText,
-      correctAnswers: 0,
-      totalQuestions: 0,
-      reactionTime: 0,
-    );
-
-    // 🤖 2. SEND TO GEMINI FOR AI RECOMMENDATION
-    String aiRecommendation = '';
     try {
-      aiRecommendation = await aiBrain.getAdvice(
-        score: result.score,
-        state: result.state,
-        triggers: result.triggers,
-        text: userText,
-      );
+      // 🧠 1. ENGINE ANALYSIS (Updated method name to analyzeAll)
+      // Note: We use 'await' because analyzeAll now orchestrates the flow
+      StressResult result = await engine.analyzeAll(userText);
+
+      // 🔥 2. SAVE INITIAL STATE TO FIREBASE
+      await firestore
+          .collection("users")
+          .doc(uid)
+          .collection("sessions")
+          .doc(sessionId)
+          .set({
+        "text": userText,
+        "stressScore": result.score,
+        "state": result.state,
+        "triggers": result.triggers,
+        "recommendation": result.recommendation,
+        "inactivity": inactivityMinutes,
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 🔁 3. UPDATE UI
+      stressScore = result.score;
+      currentState = result.state;
+      currentEmoji = _getEmoji(result.state);
+      lastAction = result.recommendation;
+      lastActionType = 'ai'; // It's 'ai' because analyzeAll calls Gemini now
+
+      // 📊 4. HISTORY
+      stressHistory.insert(0, {
+        "score": stressScore,
+        "state": currentState,
+        "timestamp": DateTime.now(),
+        "recommendation": lastAction,
+      });
+
     } catch (e) {
-      aiRecommendation = result.recommendation; // fallback to local
-      debugPrint('Gemini error: $e');
+      debugPrint("Analysis error: $e");
+      lastAction = "Connection issue. Stay calm and keep going!";
     }
-
-    // 🔥 3. SAVE TO FIREBASE (with Gemini's recommendation)
-    await firestore
-        .collection("users")
-        .doc(userId)
-        .collection("sessions")
-        .doc(sessionId)
-        .set({
-      "text": userText,
-      "stressScore": result.score,
-      "state": result.state,
-      "triggers": result.triggers,
-      "recommendation": aiRecommendation, // 👈 Gemini's advice
-      "inactivity": inactivityMinutes,
-      "updatedAt": FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    // 🔁 4. UPDATE LOCAL STATE
-    stressScore = result.score;
-    currentState = result.state;
-    currentEmoji = _getEmoji(result.state);
-    lastAction = aiRecommendation; // 👈 Show Gemini's advice in UI
-    lastActionType = 'ai';
-
-    // 📊 5. HISTORY
-    stressHistory.insert(0, {
-      'score': stressScore,
-      'state': currentState,
-      'timestamp': DateTime.now(),
-      'recommendation': aiRecommendation, // 👈 store it in history too
-    });
 
     isAnalyzing = false;
     notifyListeners();
   }
 
+  // 😊 EMOJI MAPPING
   String _getEmoji(String state) {
     switch (state) {
       case 'high':

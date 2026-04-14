@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'analyze_screen.dart';
 import 'mental_test_screen.dart';
+import 'stress_screen.dart'; // 👈 add this
 
 
 class LoginScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const StressScreen(), // 👈 TON NAVIGATION
+          builder: (_) =>  StressScreen(), // 👈 TON NAVIGATION
         ),
       );
     }

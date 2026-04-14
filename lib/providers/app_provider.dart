@@ -1,60 +1,73 @@
-import 'package:flutter/material.dart'; // 👈 Fixes ChangeNotifier & notifyListeners
-import 'package:cloud_firestore/cloud_firestore.dart'; // 👈 Fixes FirebaseFirestore
-import 'package:firebase_auth/firebase_auth.dart';
-import '../services/stress_engine.dart'; // 👈 Fixes StressEngine
-import '../models/stress_result.dart'; // 👈 Fixes StressResult
+import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
-class AppProvider extends ChangeNotifier {
-  final StressEngine engine = StressEngine();
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+enum AuthStatus { idle, loading, success, error }
 
-  int stressScore = 0;
-  String currentState = 'low';
-  String currentEmoji = '😌';
-  String lastAction = '';
-  String lastActionType = 'none';
-  bool isAnalyzing = false;
+class AuthProvider extends ChangeNotifier {
+  final AuthService _authService = AuthService();
 
-  Future<void> analyzeState(String userText) async {
-    if (userText.trim().isEmpty) return;
+  AuthStatus status = AuthStatus.idle;
+  String errorMessage = '';
+  bool isLoggedIn = false;
 
-    isAnalyzing = true;
+  Future<bool> signIn(String email, String password) async {
+    status = AuthStatus.loading;
     notifyListeners();
 
     try {
-      // 🧠 Run the updated engine
-      StressResult result = await engine.analyzeAll(userText);
-
-      // 🔁 Update local UI state
-      stressScore = result.score;
-      currentState = result.state;
-      currentEmoji = _getEmoji(result.state);
-      lastAction = result.recommendation;
-      lastActionType = 'ai';
-
-      // 🔥 Save to Firebase
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await firestore.collection("users").doc(uid).collection("sessions").add({
-          "text": userText,
-          "score": result.score,
-          "state": result.state,
-          "timestamp": FieldValue.serverTimestamp(),
-        });
+      final user = await _authService.signIn(email, password);
+      if (user != null) {
+        isLoggedIn = true;
+        status = AuthStatus.success;
+        notifyListeners();
+        return true;
       }
+      return false;
     } catch (e) {
-      debugPrint("Provider Error: $e");
-      lastAction = "Check your internet connection!";
-      lastActionType = 'error';
+      status = AuthStatus.error;
+      errorMessage = _parseError(e.toString());
+      notifyListeners();
+      return false;
     }
+  }
 
-    isAnalyzing = false;
+  Future<bool> signUp(
+      String email, String password, String fullName) async {
+    status = AuthStatus.loading;
+    notifyListeners();
+
+    try {
+      final user =
+          await _authService.signUp(email, password, fullName);
+
+      if (user != null) {
+        isLoggedIn = true;
+        status = AuthStatus.success;
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      status = AuthStatus.error;
+      errorMessage = _parseError(e.toString());
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> signOut() async {
+    await _authService.signOut();
+    isLoggedIn = false;
+    status = AuthStatus.idle;
     notifyListeners();
   }
 
-  String _getEmoji(String state) {
-    if (state == 'high') return '😵';
-    if (state == 'medium') return '😟';
-    return '😌';
+  String _parseError(String error) {
+    if (error.contains('user-not-found')) return 'Aucun compte trouvé';
+    if (error.contains('wrong-password')) return 'Mot de passe incorrect';
+    if (error.contains('email-already-in-use')) return 'Email déjà utilisé';
+    if (error.contains('weak-password')) return 'Mot de passe trop faible';
+    if (error.contains('invalid-email')) return 'Email invalide';
+    return 'Une erreur est survenue';
   }
 }

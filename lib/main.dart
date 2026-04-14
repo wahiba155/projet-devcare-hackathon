@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/app_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/wellness_provider.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
@@ -21,12 +22,14 @@ class DevCareApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => WellnessProvider()),
       ],
       child: MaterialApp(
         title: 'DevCare',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
           useMaterial3: true,
+          fontFamily: 'Roboto',
         ),
         home: const LoginScreen(),
         debugShowCheckedModeBanner: false,

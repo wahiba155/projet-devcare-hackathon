@@ -1,37 +1,70 @@
-import 'ai_service.dart';
-import 'typing_tracker.dart';
 import '../models/stress_result.dart';
 
-class StressEngine {
-  final TypingTracker _tracker = TypingTracker();
-  final AIBrainService _ai = AIBrainService();
+class StressDetectionService {
 
-  Future<StressResult> analyzeAll(String text) async {
-    // 1. Calculate numerical score (Rule-based/Fast)
-    int score = _tracker.calculateTypingStress(text);
+  StressResult analyze({
+    required String text,
+    required int inactivitySeconds,
+  }) {
+    int score = 0;
+    List<String> triggers = [];
 
-    // 2. Determine state
-    String state = score > 70 ? "high" : (score > 30 ? "medium" : "low");
+    String input = text.toLowerCase();
 
-    // 3. Get AI Reasoning (Agentic/Smart)
-    String recommendation = await _ai.getSmartAdvice(
-      score: score,
-      state: state,
-      userText: text,
-    );
+    // 🔥 1. Negative keywords
+    List<String> stressWords = [
+      "stuck",
+      "error",
+      "bug",
+      "can't",
+      "cant",
+      "frustrated",
+      "annoyed",
+      "confused",
+      "tired",
+      "burned out",
+      "help"
+    ];
+
+    for (String word in stressWords) {
+      if (input.contains(word)) {
+        score += 15;
+        triggers.add("negative_text:$word");
+      }
+    }
+
+    // ⏱️ 2. Inactivity detection
+    if (inactivitySeconds > 300) {
+      score += 25;
+      triggers.add("long_inactivity");
+    } else if (inactivitySeconds > 120) {
+      score += 10;
+      triggers.add("moderate_inactivity");
+    }
+
+    // 🧠 3. Caps / frustration typing
+    if (text.contains("!!!") || text.toUpperCase() == text && text.length > 10) {
+      score += 10;
+      triggers.add("frustration_typing");
+    }
+
+    // 🔒 Clamp score
+    if (score > 100) score = 100;
+
+    // 📊 State
+    String state;
+    if (score < 30) {
+      state = "low";
+    } else if (score < 70) {
+      state = "medium";
+    } else {
+      state = "high";
+    }
 
     return StressResult(
       score: score,
       state: state,
-      triggers: _extractTriggers(text),
-      recommendation: recommendation,
+      triggers: triggers,
     );
-  }
-
-  List<String> _extractTriggers(String text) {
-    List<String> found = [];
-    if (text.contains("error")) found.add("coding_error");
-    if (text.contains("!!!")) found.add("frustration_typing");
-    return found;
   }
 }

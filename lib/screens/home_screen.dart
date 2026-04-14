@@ -4,7 +4,8 @@ import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'breathing_screen.dart';
 import 'relaxation_screen.dart';
-import 'mental_state_screen.dart';
+import 'mental_test_screen.dart';
+import 'stress_screen.dart'; // 👈 add this
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

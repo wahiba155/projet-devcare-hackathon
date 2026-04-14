@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "1055041145910",
+    "firebase_url": "https://devcare-hackathon-default-rtdb.firebaseio.com",
     "project_id": "devcare-hackathon",
     "storage_bucket": "devcare-hackathon.firebasestorage.app"
   },

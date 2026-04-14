@@ -1,38 +1,46 @@
 import 'package:flutter/material.dart';
-import 'analyze_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = context.read<AuthProvider>();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DevCare 🧠'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('😌', style: TextStyle(fontSize: 80)),
-            const SizedBox(height: 24),
-            const Text(
-              'Comment tu te sens aujourd\'hui ?',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+        title: Text('DevCare'),
+        actions: [
+          PopupMenuButton(
+            icon: const CircleAvatar(
+              child: Icon(Icons.person),
             ),
-            const SizedBox(height: 40),
-            FilledButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AnalyzeScreen()),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                child: Text('Se déconnecter'),
+                value: 'logout',
               ),
-              icon: const Icon(Icons.psychology),
-              label: const Text('Analyser mon état'),
-            ),
-          ],
-        ),
+            ],
+            onSelected: (value) async {
+              if (value == 'logout') {
+                await user.signOut();
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+        ],
+      ),
+      body: const Center(
+        child: Text('Bienvenue 🎉'),
       ),
     );
   }

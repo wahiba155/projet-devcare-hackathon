@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'home_screen.dart';
+import 'analyze_screen.dart';
+import 'mental_test_screen.dart';
+import 'stress_screen.dart'; // 👈 add this
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

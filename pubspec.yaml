@@ -1,47 +1,27 @@
-name: devcare
-description: "AI Agent for student productivity and well-being."
-publish_to: 'none'
-version: 1.0.0+1
-
-environment:
-  sdk: ^3.11.0
-
-dependencies:
-  flutter:
-    sdk: flutter
-
-  cupertino_icons: ^1.0.8
-
-  # Firebase
-  firebase_core: ^3.0.0
-  firebase_auth: ^5.0.0
-  firebase_database: ^11.0.0
-  firebase_messaging: ^15.0.0
-
-  # UI & animations
-  fl_chart: ^0.68.0
-  lottie: ^3.0.0
-  flutter_animate: ^4.5.0
-  google_fonts: ^6.2.1
-
-  # State management
-  provider: ^6.1.2
-
-  # HTTP / API calls
-  http: ^1.2.1
-  dio: ^5.4.3
-
-  # Stockage local
-  shared_preferences: ^2.3.0
-
-  # Utilitaires
-  intl: ^0.19.0
-  uuid: ^4.4.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-
-flutter:
+name: devcare 
+description: "DevCare app" 
+publish_to: 'none' 
+version: 1.0.0+1 
+ 
+environment: 
+  sdk: 3.11.0 
+ 
+dependencies: 
+  flutter: 
+    sdk: flutter 
+  cupertino_icons: 1.0.8 
+  fl_chart: 0.68.0 
+  flutter_animate: 4.5.0 
+  google_fonts: 6.2.1 
+  provider: 6.1.2 
+  http: 1.2.1 
+  shared_preferences: 2.3.0 
+  intl: 0.19.0 
+ 
+dev_dependencies: 
+  flutter_test: 
+    sdk: flutter 
+  flutter_lints: 6.0.0 
+ 
+flutter: 
   uses-material-design: true

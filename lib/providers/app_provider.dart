@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/ai_service.dart';
 import '../services/stress_service.dart';
-import '../services/firebase_service.dart';
 
 class AppProvider extends ChangeNotifier {
   int stressScore = 0;
@@ -10,59 +8,27 @@ class AppProvider extends ChangeNotifier {
   String lastAction = '';
   String lastActionType = '';
   bool isAnalyzing = false;
-
   int sessionMinutes = 0;
   int inactivityMinutes = 0;
-
   List<Map<String, dynamic>> stressHistory = [];
 
   Future<void> analyzeState(String userText) async {
     isAnalyzing = true;
     notifyListeners();
 
-    try {
-      // Score rapide local
-      final textScore = StressService.calculateTextScore(userText);
-      final behaviorScore = StressService.calculateBehaviorScore(
-        sessionMinutes: sessionMinutes,
-        inactivityMinutes: inactivityMinutes,
-      );
-      stressScore = ((textScore + behaviorScore) / 2).round();
+    await Future.delayed(const Duration(seconds: 1));
 
-      // Appel IA pour raisonnement profond
-      final result = await AIService.analyzeUserState(
-        userText: userText,
-        sessionMinutes: sessionMinutes,
-        inactivityMinutes: inactivityMinutes,
-      );
+    stressScore = StressService.calculateTextScore(userText);
+    currentState = StressService.getStateLabel(stressScore);
+    currentEmoji = StressService.getEmoji(stressScore);
+    lastAction = _getFallbackAction(currentState);
+    lastActionType = 'continue';
 
-      stressScore = result['stress_score'] ?? stressScore;
-      currentState = result['state'] ?? StressService.getStateLabel(stressScore);
-      currentEmoji = result['emoji'] ?? StressService.getEmoji(stressScore);
-      lastAction = result['action'] ?? '';
-      lastActionType = result['action_type'] ?? 'continue';
-
-      // Sauvegarder dans Firebase
-      await FirebaseService.saveStressEntry(
-        score: stressScore,
-        state: currentState,
-        action: lastAction,
-      );
-
-      // Mettre à jour l'historique
-      stressHistory.insert(0, {
-        'score': stressScore,
-        'state': currentState,
-        'timestamp': DateTime.now(),
-      });
-
-    } catch (e) {
-      // Fallback sans API
-      stressScore = StressService.calculateTextScore(userText);
-      currentState = StressService.getStateLabel(stressScore);
-      currentEmoji = StressService.getEmoji(stressScore);
-      lastAction = _getFallbackAction(currentState);
-    }
+    stressHistory.insert(0, {
+      'score': stressScore,
+      'state': currentState,
+      'timestamp': DateTime.now(),
+    });
 
     isAnalyzing = false;
     notifyListeners();
@@ -75,10 +41,5 @@ class AppProvider extends ChangeNotifier {
       case 'fatigue': return 'Pause de 10 min. Bois de l\'eau.';
       default: return 'Continue comme ça ! Tu es dans le flow. 💪';
     }
-  }
-
-  void incrementSession() {
-    sessionMinutes++;
-    if (sessionMinutes % 60 == 0) notifyListeners();
   }
 }

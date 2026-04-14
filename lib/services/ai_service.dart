@@ -2,47 +2,52 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AIBrainService {
-  // 🔑 Put your Gemini API key here
-  final String apiKey = "AIzaSyA1c9NoGSnyKelnh0-4DFyo1AmFa52nZpU";
+  // 🔑 PASTE YOUR GROQ KEY HERE (Starts with gsk_...)
+  final String apiKey = "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";
 
   Future<String> getSmartAdvice({
     required int score,
     required String state,
     required String userText,
   }) async {
-    final url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey";
+    final url = "https://api.groq.com/openai/v1/chat/completions";
 
-    // The "System Prompt" that gives the agent its personality
     final prompt = """
-    You are an empathetic AI Student Coach. 
+    You are an empathetic Student Stress Coach. 
     The student's stress score is $score/100 (State: $state).
-    They just wrote: "$userText"
+    They said: "$userText"
     
-    Give them one SHORT, supportive sentence of advice. 
-    If they seem stuck on a bug, be encouraging. 
-    If they are tired, suggest a specific small break.
+    INSTRUCTIONS:
+    - If the score is HIGH (>70), be very calm and suggest an immediate break.
+    - If they mention being "tired", "dizzy", or "stuck", PRIORITIZE their words over the numerical score.
+    - Give exactly one SHORT, supportive sentence. Do not be overly happy if they feel bad.
     """;
 
     try {
       final response = await http.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
         body: jsonEncode({
-          "contents": [
-            {
-              "parts": [{"text": prompt}]
-            }
-          ]
+          "model": "llama-3.3-70b-versatile",
+          "messages": [
+            {"role": "user", "content": prompt}
+          ],
+          "temperature": 0.5,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['candidates'][0]['content']['parts'][0]['text'];
+        return data['choices'][0]['message']['content'];
+      } else {
+        print("Groq Error: ${response.body}");
       }
     } catch (e) {
-      print("Gemini Error: $e");
+      print("Connection Error: $e");
     }
-    return "You're doing great. Take a deep breath!"; // Fallback
+    return "Take a deep breath. You're doing your best!";
   }
 }

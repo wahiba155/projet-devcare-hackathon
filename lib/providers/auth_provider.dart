@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
@@ -10,13 +11,16 @@ class AuthProvider extends ChangeNotifier {
   String errorMessage = '';
   bool isLoggedIn = false;
 
+  // Permet au main.dart de vérifier l'état de connexion
+  User? get user => FirebaseAuth.instance.currentUser;
+
   Future<bool> signIn(String email, String password) async {
     status = AuthStatus.loading;
     notifyListeners();
 
     try {
-      final user = await _authService.signIn(email, password);
-      if (user != null) {
+      final userResult = await _authService.signIn(email, password);
+      if (userResult != null) {
         isLoggedIn = true;
         status = AuthStatus.success;
         notifyListeners();
@@ -31,16 +35,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signUp(
-      String email, String password, String fullName) async {
+  Future<bool> signUp(String email, String password, String fullName) async {
     status = AuthStatus.loading;
     notifyListeners();
 
     try {
-      final user =
-          await _authService.signUp(email, password, fullName);
-
-      if (user != null) {
+      final userResult = await _authService.signUp(email, password, fullName);
+      if (userResult != null) {
         isLoggedIn = true;
         status = AuthStatus.success;
         notifyListeners();

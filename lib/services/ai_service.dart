@@ -1,57 +1,55 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
-class AIService {
-  static const String _baseUrl = 'https://api.openai.com/v1/chat/completions';
-  static const String _apiKey = 'sk-VOTRE_CLE_OPENAI'; // remplacer
+class AIBrainService {
+  final String apiKey = "AIzaSyA1c9NoGSnyKelnh0-4DFyo1AmFa52nZpU"; // 🔑
 
-  static Future<Map<String, dynamic>> analyzeUserState({
-    required String userText,
-    required int sessionMinutes,
-    required int inactivityMinutes,
+  Future<String> getAdvice({
+    required int score,
+    required String state,
+    required List<String> triggers,
+    required String text,
   }) async {
-    final prompt = '''
-Tu es un agent IA spécialisé dans le bien-être des étudiants et développeurs.
+    // 👤 Pull user info from Firebase Auth
+    final user = FirebaseAuth.instance.currentUser;
+    final userName = user?.displayName ?? 'Student';
+    final userEmail = user?.email ?? '';
 
-Contexte utilisateur :
-- Message : "$userText"
-- Durée de session : ${sessionMinutes} minutes
-- Inactivité récente : ${inactivityMinutes} minutes
+    final prompt = """
+You are a mental health AI coach for students.
 
-Analyse l'état mental et réponds UNIQUEMENT en JSON avec ce format :
-{
-  "stress_score": <0-100>,
-  "state": "<calme|fatigue|stress|burnout|bloque>",
-  "emoji": "<emoji adapté>",
-  "reason": "<raison courte en français>",
-  "action": "<action recommandée>",
-  "action_type": "<breathing|break|hint|reschedule|continue>"
-}
-''';
+User: $userName ($userEmail)
+- Stress score: $score / 100
+- State: $state
+- Triggers: ${triggers.join(', ')}
+- What they wrote: "$text"
+
+Give a SHORT, practical recommendation (max 2 sentences).
+Address them by first name if possible. Be calm, supportive, and actionable.
+""";
 
     final response = await http.post(
-      Uri.parse(_baseUrl),
-      headers: {
-        'Authorization': 'Bearer $_apiKey',
-        'Content-Type': 'application/json',
-      },
+      Uri.parse(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey",
+      ),
+      headers: {"Content-Type": "application/json"},
       body: jsonEncode({
-        'model': 'gpt-4o-mini',
-        'messages': [
-          {'role': 'user', 'content': prompt}
-        ],
-        'max_tokens': 300,
-        'temperature': 0.3,
+        "contents": [
+          {
+            "parts": [
+              {"text": prompt}
+            ]
+          }
+        ]
       }),
     );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final content = data['choices'][0]['message']['content'];
-      // Nettoyer le JSON (retirer les backticks si présents)
-      final clean = content.replaceAll('```json', '').replaceAll('```', '').trim();
-      return jsonDecode(clean);
+    if (response.statusCode != 200) {
+      throw Exception('Gemini API error: ${response.statusCode} ${response.body}');
     }
-    throw Exception('Erreur API OpenAI: ${response.statusCode}');
+
+    final data = jsonDecode(response.body);
+    return data["candidates"][0]["content"]["parts"][0]["text"];
   }
 }

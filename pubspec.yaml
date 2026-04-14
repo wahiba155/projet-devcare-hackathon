@@ -1,11 +1,11 @@
-name: devcare
-description: "DevCare app"
-publish_to: 'none'
-version: 1.0.0+1
-
+name: devcare 
+description: "DevCare app" 
+publish_to: 'none' 
+version: 1.0.0+1 
+ 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
-
+  sdk: '>=3.3.0 <4.0.0'
+ 
 dependencies:
   flutter:
     sdk: flutter
@@ -29,6 +29,10 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 
 flutter:
+  cloud_firestore: ^5.6.12
+  
+ 
+flutter: 
   uses-material-design: true
   assets:
     - assets/audio/

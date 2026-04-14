@@ -12,7 +12,6 @@ class AIBrainService {
   }) async {
     final url = "https://api.groq.com/openai/v1/chat/completions";
 
-    // 🧠 The System Prompt tells the AI how to behave based on the score
     final prompt = """
     You are an empathetic Student Stress Coach. 
     The student's stress score is $score/100 (State: $state).

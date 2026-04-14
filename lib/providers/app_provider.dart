@@ -1,97 +1,60 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart'; // 👈 Fixes ChangeNotifier & notifyListeners
+import 'package:cloud_firestore/cloud_firestore.dart'; // 👈 Fixes FirebaseFirestore
 import 'package:firebase_auth/firebase_auth.dart';
-
-import '../services/stress_engine.dart';
-import '../services/ai_service.dart'; // Ensure this filename matches
-import '../models/stress_result.dart';
+import '../services/stress_engine.dart'; // 👈 Fixes StressEngine
+import '../models/stress_result.dart'; // 👈 Fixes StressResult
 
 class AppProvider extends ChangeNotifier {
   final StressEngine engine = StressEngine();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final AIBrainService aiBrain = AIBrainService();
-
-  String? get userId => FirebaseAuth.instance.currentUser?.uid;
-  final String sessionId = "current";
 
   int stressScore = 0;
   String currentState = 'low';
   String currentEmoji = '😌';
   String lastAction = '';
-  String lastActionType = '';
+  String lastActionType = 'none';
   bool isAnalyzing = false;
 
-  int sessionMinutes = 0;
-  int inactivityMinutes = 0;
-
-  List<Map<String, dynamic>> stressHistory = [];
-
   Future<void> analyzeState(String userText) async {
-    final uid = userId;
-
-    if (uid == null) {
-      debugPrint("User not logged in");
-      return;
-    }
+    if (userText.trim().isEmpty) return;
 
     isAnalyzing = true;
     notifyListeners();
 
     try {
-      // 🧠 1. ENGINE ANALYSIS (Updated method name to analyzeAll)
-      // Note: We use 'await' because analyzeAll now orchestrates the flow
+      // 🧠 Run the updated engine
       StressResult result = await engine.analyzeAll(userText);
 
-      // 🔥 2. SAVE INITIAL STATE TO FIREBASE
-      await firestore
-          .collection("users")
-          .doc(uid)
-          .collection("sessions")
-          .doc(sessionId)
-          .set({
-        "text": userText,
-        "stressScore": result.score,
-        "state": result.state,
-        "triggers": result.triggers,
-        "recommendation": result.recommendation,
-        "inactivity": inactivityMinutes,
-        "updatedAt": FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // 🔁 3. UPDATE UI
+      // 🔁 Update local UI state
       stressScore = result.score;
       currentState = result.state;
       currentEmoji = _getEmoji(result.state);
       lastAction = result.recommendation;
-      lastActionType = 'ai'; // It's 'ai' because analyzeAll calls Gemini now
+      lastActionType = 'ai';
 
-      // 📊 4. HISTORY
-      stressHistory.insert(0, {
-        "score": stressScore,
-        "state": currentState,
-        "timestamp": DateTime.now(),
-        "recommendation": lastAction,
-      });
-
+      // 🔥 Save to Firebase
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await firestore.collection("users").doc(uid).collection("sessions").add({
+          "text": userText,
+          "score": result.score,
+          "state": result.state,
+          "timestamp": FieldValue.serverTimestamp(),
+        });
+      }
     } catch (e) {
-      debugPrint("Analysis error: $e");
-      lastAction = "Connection issue. Stay calm and keep going!";
+      debugPrint("Provider Error: $e");
+      lastAction = "Check your internet connection!";
+      lastActionType = 'error';
     }
 
     isAnalyzing = false;
     notifyListeners();
   }
 
-  // 😊 EMOJI MAPPING
   String _getEmoji(String state) {
-    switch (state) {
-      case 'high':
-        return '😵';
-      case 'medium':
-        return '😟';
-      case 'low':
-      default:
-        return '😌';
-    }
+    if (state == 'high') return '😵';
+    if (state == 'medium') return '😟';
+    return '😌';
   }
 }

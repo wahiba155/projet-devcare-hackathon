@@ -1,17 +1,18 @@
-name: devcare 
-description: "DevCare app" 
-publish_to: 'none' 
-version: 1.0.0+1 
- 
+name: devcare
+description: "DevCare app"
+publish_to: 'none'
+version: 1.0.0+1
+
 environment:
   sdk: '>=3.3.0 <4.0.0'
- 
+
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
   firebase_core: ^3.0.0
   firebase_auth: ^5.0.0
+  cloud_firestore: ^5.6.12
   fl_chart: ^0.68.0
   flutter_animate: ^4.5.0
   google_fonts: ^6.2.1
@@ -19,7 +20,6 @@ dependencies:
   http: ^1.2.1
   shared_preferences: ^2.3.0
   intl: ^0.19.0
-  # --- TES AJOUTS ICI ---
   audioplayers: ^5.2.1
   vibration: ^1.8.4
 
@@ -29,10 +29,6 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 
 flutter:
-  cloud_firestore: ^5.6.12
-  
- 
-flutter: 
   uses-material-design: true
   assets:
     - assets/audio/

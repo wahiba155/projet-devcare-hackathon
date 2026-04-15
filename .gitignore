@@ -8,7 +8,7 @@ build/
 
 # Clés sensibles
 lib/services/ai_service.dart
-
+.env
 # IDE
 .idea/
 .vscode/

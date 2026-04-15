@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Import des providers
 import 'providers/app_provider.dart';
@@ -17,6 +18,7 @@ import 'screens/stuck_screen.dart';
 void main() async {
   // Initialisation obligatoire pour Firebase et les bindings Flutter
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

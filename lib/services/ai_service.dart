@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AIBrainService {
-  // 🔑 PASTE YOUR GROQ KEY HERE (Starts with gsk_...)
-  final String apiKey = "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";
+  final String apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
 
   Future<String> getSmartAdvice({
     required int score,

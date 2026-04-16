@@ -16,41 +16,48 @@ class AppProvider extends ChangeNotifier {
   bool isAnalyzing = false;
 
   Future<void> analyzeState(String userText) async {
-    if (userText.trim().isEmpty) return;
+  if (userText.trim().isEmpty) return;
 
-    isAnalyzing = true;
-    notifyListeners();
+  isAnalyzing = true;
+  notifyListeners();
 
-    try {
-      // 🧠 Run the updated engine
-      StressResult result = await engine.analyzeAll(userText);
+  try {
+    StressResult result = await engine.analyzeAll(userText);
 
-      // 🔁 Update local UI state
-      stressScore = result.score;
-      currentState = result.state;
-      currentEmoji = _getEmoji(result.state);
-      lastAction = result.recommendation;
-      lastActionType = 'ai';
+    stressScore = result.score;
+    currentState = result.state;
+    currentEmoji = _getEmoji(result.state);
+    lastAction = result.recommendation;
+    lastActionType = 'ai';
 
-      // 🔥 Save to Firebase
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await firestore.collection("users").doc(uid).collection("sessions").add({
-          "text": userText,
-          "score": result.score,
-          "state": result.state,
-          "timestamp": FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      debugPrint("Provider Error: $e");
-      lastAction = "Check your internet connection!";
-      lastActionType = 'error';
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      // ✅ Existing: user-scoped sessions
+      await firestore.collection("users").doc(uid).collection("sessions").add({
+        "text": userText,
+        "score": result.score,
+        "state": result.state,
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+
+      // ✅ NEW: global stress_log with uid for cross-user stats
+      await firestore.collection("stress_log").add({
+        "uid": uid,                          // 👈 user ID for filtering per user
+        "text": userText,
+        "score": result.score,
+        "state": result.state,
+        "timestamp": FieldValue.serverTimestamp(),
+      });
     }
-
-    isAnalyzing = false;
-    notifyListeners();
+  } catch (e) {
+    debugPrint("Provider Error: $e");
+    lastAction = "Check your internet connection!";
+    lastActionType = 'error';
   }
+
+  isAnalyzing = false;
+  notifyListeners();
+}
 
   String _getEmoji(String state) {
     if (state == 'high') return '😵';

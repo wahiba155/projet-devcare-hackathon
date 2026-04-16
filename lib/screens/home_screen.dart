@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../providers/auth_provider.dart' as app_auth; // 👈 alias anti-conflit
 import '../providers/stuck_provider.dart';
 import 'login_screen.dart';
 import 'breathing_screen.dart';
@@ -10,10 +12,34 @@ import 'stress_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  Future<Map<String, dynamic>> _fetchUserStats(String uid) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection("stress_log")
+        .where("uid", isEqualTo: uid)
+        .orderBy("timestamp", descending: true)
+        .limit(10)
+        .get();
+
+    final docs = snapshot.docs.map((d) => d.data()).toList();
+
+    if (docs.isEmpty) return {"average": "0", "lastState": "—", "count": 0};
+
+    final avgScore =
+        docs.map((d) => (d["score"] as num).toDouble()).reduce((a, b) => a + b) /
+            docs.length;
+    final lastState = docs.first["state"] ?? "—";
+
+    return {
+      "average": avgScore.toStringAsFixed(0),
+      "lastState": lastState,
+      "count": docs.length,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Récupération de l'auth pour le pseudo et la déconnexion
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<app_auth.AuthProvider>(); // 👈 alias
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -27,9 +53,7 @@ class HomeScreen extends StatelessWidget {
         centerTitle: true,
         actions: [
           PopupMenuButton<String>(
-            icon: const CircleAvatar(
-              child: Icon(Icons.person),
-            ),
+            icon: const CircleAvatar(child: Icon(Icons.person)),
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'logout',
@@ -43,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (route) => false,
+                    (route) => false,
                   );
                 }
               }
@@ -57,24 +81,81 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Bonjour 👋", // Ou authProvider.userDisplayName si disponible
+              "Bonjour 👋",
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
-            // --- BANDEAU ÉTAT MENTAL ---
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: const Text(
-                "🧠 Votre état mental actuel semble : Stress Moyen",
-                style: TextStyle(fontSize: 15, color: Colors.deepOrange, fontWeight: FontWeight.w500),
-              ),
+            // --- BANDEAU ÉTAT MENTAL DYNAMIQUE ---
+            FutureBuilder<Map<String, dynamic>>(
+              future: _fetchUserStats(uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.deepOrange,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: const Text(
+                      "⚠️ Impossible de charger les stats",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+
+                final stats = snapshot.data!;
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "🧠 Score moyen : ${stats['average']} / 100",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.deepOrange,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "📊 Dernier état : ${stats['lastState']}  •  ${stats['count']} sessions",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 32),
@@ -84,7 +165,6 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // --- CARTE AGENT IA STRESS ---
             _buildSectionCard(
               context,
               title: "Agent IA Stress",
@@ -100,7 +180,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // --- CARTE STUCK BREAKER (MANUEL) ---
             _buildSectionCard(
               context,
               title: "Stuck Breaker",
@@ -109,7 +188,6 @@ class HomeScreen extends StatelessWidget {
               color: const Color(0xFFF3F2FF),
               iconColor: const Color(0xFF6C63FF),
               onTap: () {
-                // Déclenche l'IA avec un score par défaut
                 context.read<StuckProvider>().triggerStuckState(60);
               },
             ),
@@ -121,7 +199,6 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // --- ACTIONS RAPIDES (Respiration / Relaxation) ---
             Row(
               children: [
                 Expanded(
@@ -147,7 +224,8 @@ class HomeScreen extends StatelessWidget {
                     iconColor: Colors.purple,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const RelaxationScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const RelaxationScreen()),
                     ),
                   ),
                 ),
@@ -159,16 +237,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Widget pour les grandes cartes horizontales
   Widget _buildSectionCard(
-      BuildContext context, {
-        required String title,
-        required String subtitle,
-        required IconData icon,
-        required Color color,
-        required Color iconColor,
-        required VoidCallback onTap,
-      }) {
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -212,15 +289,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Widget pour les petites cartes carrées
   Widget _buildActionCard(
-      BuildContext context, {
-        required String title,
-        required IconData icon,
-        required Color color,
-        required Color iconColor,
-        required VoidCallback onTap,
-      }) {
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
